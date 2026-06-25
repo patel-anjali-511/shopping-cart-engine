@@ -5,7 +5,6 @@ const validateRequest = require('../services/validateRequest');
 
 const router = express.Router();
 
-// Create new user route validation
 router.post('/', [
   body('name')
     .trim()
@@ -18,10 +17,8 @@ router.post('/', [
   validateRequest
 ], createUser);
 
-// Retrieve all users
 router.get('/', getUsers);
 
-// Retrieve user by ID validation
 router.get('/:id', [
   param('id')
     .isMongoId()
@@ -29,7 +26,6 @@ router.get('/:id', [
   validateRequest
 ], getUserById);
 
-// Update user details validation
 router.put('/:id', [
   param('id')
     .isMongoId()
@@ -47,7 +43,6 @@ router.put('/:id', [
   validateRequest
 ], updateUser);
 
-// Delete user validation
 router.delete('/:id', [
   param('id')
     .isMongoId()

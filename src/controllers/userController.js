@@ -1,14 +1,10 @@
 const userModel = require('../models/user.model');
 const { successResponse, errorResponse } = require('../utils/responce');
 
-/**
- * Create a new user
- */
 const createUser = async (req, res, next) => {
   try {
     const { name, email } = req.body;
 
-    // Check if user already exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return errorResponse(res, 400, "User already exists", { existingUser });
@@ -21,9 +17,6 @@ const createUser = async (req, res, next) => {
   }
 };
 
-/**
- * Retrieve all users
- */
 const getUsers = async (req, res, next) => {
   try {
     const users = await userModel.find();
@@ -33,9 +26,6 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-/**
- * Retrieve user by ID
- */
 const getUserById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -51,9 +41,6 @@ const getUserById = async (req, res, next) => {
   }
 };
 
-/**
- * Update user details
- */
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -75,9 +62,6 @@ const updateUser = async (req, res, next) => {
   }
 };
 
-/**
- * Delete a user
- */
 const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;

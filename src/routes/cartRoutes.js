@@ -5,7 +5,6 @@ const validateRequest = require('../services/validateRequest');
 
 const router = express.Router();
 
-// Add item to cart validation
 router.post('/add-item', [
   body('userId')
     .isMongoId()
@@ -27,7 +26,6 @@ router.post('/add-item', [
   validateRequest
 ], addItemToCart);
 
-// Fetch cart validation
 router.get('/:userId', [
   param('userId')
     .isMongoId()
@@ -35,7 +33,6 @@ router.get('/:userId', [
   validateRequest
 ], getCart);
 
-// Update item quantity validation
 router.put('/update-item/:itemId', [
   param('itemId')
     .isMongoId()
@@ -46,7 +43,6 @@ router.put('/update-item/:itemId', [
   validateRequest
 ], updateCartItem);
 
-// Remove item validation
 router.delete('/remove-item/:itemId', [
   param('itemId')
     .isMongoId()
@@ -54,7 +50,6 @@ router.delete('/remove-item/:itemId', [
   validateRequest
 ], removeCartItem);
 
-// Checkout validation
 router.get('/checkout/:userId', [
   param('userId')
     .isMongoId()

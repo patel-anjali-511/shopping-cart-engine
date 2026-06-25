@@ -3,34 +3,24 @@ const cartItemModel = require('../models/cartItem.model');
 const userModel = require('../models/user.model');
 const { successResponse, errorResponse } = require('../utils/responce');
 
-/**
- * Helper utility to retrieve requester identity from headers, query, or body
- * for multi-tenant isolation verification.
- */
 const getRequesterUserId = (req) => {
   return req.headers['x-user-id'] || (req.body && req.body.userId) || req.query.userId;
 };
 
-/**
- * Add an item to the shopping cart
- */
 const addItemToCart = async (req, res, next) => {
   try {
     const { userId, productId, productName, price, quantity } = req.body;
 
-    // Verify user tenant exists
     const user = await userModel.findById(userId);
     if (!user) {
       return errorResponse(res, 404, "User not found");
     }
 
-    // Retrieve or create active cart for the user
     let cart = await cartModel.findOne({ user: userId, status: "ACTIVE" });
     if (!cart) {
       cart = await cartModel.create({ user: userId });
     }
 
-    // Check if the item already exists in this cart
     let existingItem = await cartItemModel.findOne({ cart: cart._id, productId });
     
     if (existingItem) {
@@ -46,7 +36,6 @@ const addItemToCart = async (req, res, next) => {
       });
     }
 
-    // Retrieve all cart items and calculate totals
     const cartItems = await cartItemModel.find({ cart: cart._id });
     let totalItems = 0;
     let totalAmount = 0;
@@ -66,14 +55,10 @@ const addItemToCart = async (req, res, next) => {
   }
 };
 
-/**
- * Fetch the active cart for a specific user (with tenant protection)
- */
 const getCart = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Security: Verify tenant owner access
     const requesterId = getRequesterUserId(req);
     if (requesterId && requesterId !== userId) {
       return errorResponse(res, 403, "Access denied: You do not own this cart session");
@@ -91,15 +76,11 @@ const getCart = async (req, res, next) => {
   }
 };
 
-/**
- * Update cart item quantity (with strict tenant security checking)
- */
 const updateCartItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
     const { quantity } = req.body;
 
-    // Security: Extract requester user identity
     const requesterId = getRequesterUserId(req);
     if (!requesterId) {
       return errorResponse(res, 400, "Missing user identification (userId or X-User-Id header)");
@@ -115,7 +96,6 @@ const updateCartItem = async (req, res, next) => {
       return errorResponse(res, 404, "Associated cart not found");
     }
 
-    // Security: Assert cart ownership matches requester
     if (cart.user.toString() !== requesterId) {
       return errorResponse(res, 403, "Access denied: You do not own this cart item");
     }
@@ -123,7 +103,6 @@ const updateCartItem = async (req, res, next) => {
     item.quantity = Number(quantity);
     await item.save();
 
-    // Recalculate totals
     const cartItems = await cartItemModel.find({ cart: cart._id });
     let totalItems = 0;
     let totalAmount = 0;
@@ -143,14 +122,10 @@ const updateCartItem = async (req, res, next) => {
   }
 };
 
-/**
- * Remove an item from the cart (with strict tenant security checking)
- */
 const removeCartItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
 
-    // Security: Extract requester user identity
     const requesterId = getRequesterUserId(req);
     if (!requesterId) {
       return errorResponse(res, 400, "Missing user identification (userId or X-User-Id header)");
@@ -166,14 +141,12 @@ const removeCartItem = async (req, res, next) => {
       return errorResponse(res, 404, "Associated cart not found");
     }
 
-    // Security: Assert cart ownership matches requester
     if (cart.user.toString() !== requesterId) {
       return errorResponse(res, 403, "Access denied: You do not own this cart item");
     }
 
     await cartItemModel.findByIdAndDelete(itemId);
 
-    // Recalculate remaining totals
     const cartItems = await cartItemModel.find({ cart: cart._id });
     let totalItems = 0;
     let totalAmount = 0;
@@ -193,14 +166,10 @@ const removeCartItem = async (req, res, next) => {
   }
 };
 
-/**
- * Return summary and checkout calculations (with campaign engine calculations & bugfixes)
- */
 const checkout = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Security: Verify tenant owner access
     const requesterId = getRequesterUserId(req);
     if (requesterId && requesterId !== userId) {
       return errorResponse(res, 403, "Access denied: You do not own this cart session");
@@ -220,8 +189,6 @@ const checkout = async (req, res, next) => {
     let discount = 0;
     let promotionsApplied = [];
 
-    // Tiered Promotional Campaign Engine
-    // 1. Value-based tiers (Gold/Silver)
     if (subtotal >= 10000) {
       discount = subtotal * 0.10;
       promotionsApplied.push("Gold Discount (10%)");
@@ -230,13 +197,11 @@ const checkout = async (req, res, next) => {
       promotionsApplied.push("Silver Discount (5%)");
     }
 
-    // 2. Diversity bonus tier (3 or more distinct products in cart)
     if (cartItems.length >= 3) {
       discount += 500;
       promotionsApplied.push("Diversity Bonus ₹500");
     }
 
-    // Prevent negative final amount and capping discount at subtotal
     if (discount > subtotal) {
       discount = subtotal;
     }
